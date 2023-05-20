@@ -4,11 +4,16 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
+const swaggerUI = require('swagger-ui-express');
+const swaggerDocument = require('./docs/swagger.json');
+
 const options = require("./knexfile.js");
 const knex = require("knex")(options);
 
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
+var peopleRouter = require("./routes/people");
+var movieRouter = require("./routes/movies");
 
 var app = express();
 
@@ -28,6 +33,9 @@ app.use((req, res, next) => {
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
+app.use("/people", peopleRouter);
+app.use("/movies", movieRouter);
+app.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
 app.get("/knex", function (req, res, next) {
   req.db
     .raw("SELECT VERSION()")
