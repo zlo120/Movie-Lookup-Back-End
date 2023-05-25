@@ -9,6 +9,7 @@ const swaggerDocument = require('./docs/swagger.json');
 
 const options = require("./knexfile.js");
 const knex = require("knex")(options);
+const cors = require('cors');
 
 const { attachPaginate } = require('knex-paginate');
 attachPaginate();
@@ -24,6 +25,12 @@ var app = express();
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors());
+
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -35,7 +42,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/", indexRouter);
-app.use("/users", usersRouter);
+app.use("/user", usersRouter);
 app.use("/people", peopleRouter);
 app.use("/movies", movieRouter);
 app.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
