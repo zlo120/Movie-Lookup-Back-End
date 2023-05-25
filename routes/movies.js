@@ -25,7 +25,7 @@ router.get('/search', function (req, res, next) {
                 .from("basics")
                 .select("*")
                 .whereRaw("`originalTitle` like '%" + title + "%'")
-                .paginate({ perPage: 100, currentPage: page })
+                .paginate({ perPage: 100, currentPage: page, isLengthAware: true })
                 .then(paginatedData => {
 
                     let movieData = paginatedData.data.map(row => {
@@ -70,9 +70,9 @@ router.get('/search', function (req, res, next) {
         if (title === undefined && year !== undefined) {
             return req.db
                 .from("basics")
-                .select("tconst")
+                .select("*")
                 .whereRaw("`year` = " + year)
-                .paginate({ perPage: 100, currentPage: page })
+                .paginate({ perPage: 100, currentPage: page, isLengthAware: true })
                 .then(paginatedData => {
 
                     let movieData = paginatedData.data.map(row => {
@@ -119,7 +119,7 @@ router.get('/search', function (req, res, next) {
                 .from("basics")
                 .select("*")
                 .whereRaw("`originalTitle` like '%" + title + "%' AND `year` = " + year)
-                .paginate({ perPage: 100, currentPage: page })
+                .paginate({ perPage: 100, currentPage: page, isLengthAware: true })
                 .then(paginatedData => {
 
                     let movieData = paginatedData.data.map(row => {
@@ -165,7 +165,7 @@ router.get('/search', function (req, res, next) {
     return req.db
         .from("basics")
         .select("*")
-        .paginate({ perPage: 100, currentPage: page })
+        .paginate({ perPage: 100, currentPage: page, isLengthAware: true })
         .then(paginatedData => {
 
             let movieData = paginatedData.data.map(row => {
@@ -215,8 +215,95 @@ router.get('/data/:imdbID', function (req, res, next) {
         .from("basics")
         .select("*")
         .where("tconst", imdbID)
-        .then(rows => {
-            res.json({ Error: false, Message: "Success", Data: rows });
+        .then(result => {
+            result = result[0];
+            let genres = result.genres;
+
+            if (genres !== undefined) {
+                genres = genres.split(",")
+            } else {
+                genres = [];
+            }
+
+            return {
+                title: result.primaryTitle,
+                year: result.year,
+                runtime: result.runtimeMinutes,
+                genres: genres,
+                country: result.country,
+                principals: "test",
+                ratings: "test",
+                boxoffice: result.boxoffice,
+                poster: result.poster,
+                plot: result.plot
+            };
+        })
+        .then(movie => {
+            return req.db
+                .from("principals")
+                .select("*")
+                .where("tconst", imdbID)
+                .then(results => {
+
+                    let principals = results.map(principal => {
+
+                        let characters = principal.characters;
+
+                        if (characters !== undefined && characters === "") {
+                            characters = [];
+                        }
+                        else if (characters !== undefined) {
+                            characters = JSON.parse(characters);
+                        }
+
+                        return {
+                            id: principal.nconst,
+                            category: principal.category,
+                            name: principal.name,
+                            characters: characters
+                        }
+                    })
+
+                    movie.principals = principals;
+
+                    return movie;
+                })
+        })
+        .then(movie => {
+            req.db
+                .from("ratings")
+                .select("*")
+                .where("tconst", imdbID)
+                .then(results => {
+
+                    let ratings = results.map(rating => {
+                        if (rating.source === "Internet Movie Database") {
+                            return {
+                                source: rating.source,
+                                value: parseFloat(rating.value)
+                            }
+                        }
+
+                        if (rating.source === "Rotten Tomatoes") {
+                            return {
+                                source: rating.source,
+                                value: parseInt(rating.value)
+                            }
+                        }
+
+                        if (rating.source === "Metacritic") {
+                            return {
+                                source: rating.source,
+                                value: parseInt(rating.value)
+                            }
+                        }
+
+                    })
+
+                    movie.ratings = ratings;
+
+                    res.json(movie);
+                })
         })
         .catch((err) => {
             console.log(err);
