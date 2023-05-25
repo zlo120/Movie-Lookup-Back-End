@@ -10,6 +10,9 @@ const swaggerDocument = require('./docs/swagger.json');
 const options = require("./knexfile.js");
 const knex = require("knex")(options);
 
+const { attachPaginate } = require('knex-paginate');
+attachPaginate();
+
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var peopleRouter = require("./routes/people");
@@ -36,16 +39,6 @@ app.use("/users", usersRouter);
 app.use("/people", peopleRouter);
 app.use("/movies", movieRouter);
 app.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
-app.get("/knex", function (req, res, next) {
-  req.db
-    .raw("SELECT VERSION()")
-    .then((version) => console.log(version[0][0]))
-    .catch((err) => {
-      console.log(err);
-      throw err;
-    });
-  res.send("Version Logged successfully");
-});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

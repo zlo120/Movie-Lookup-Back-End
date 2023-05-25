@@ -13,23 +13,53 @@ router.get('/search', function (req, res, next) {
     }
 
     if (page === undefined) {
-        page = 0;
+        page = 1;
     } else {
-        page = (page - 1) * 100;
+        page = Number(page);
     }
 
     if (title !== undefined || year !== undefined) {
 
         if (title !== undefined && year === undefined) {
-            console.log("title not undefined and year undefined")
             return req.db
                 .from("basics")
                 .select("*")
                 .whereRaw("`originalTitle` like '%" + title + "%'")
-                .limit(100)
-                .offset(page)
-                .then(rows => {
-                    res.json({ Error: false, Message: "Success", Data: rows });
+                .paginate({ perPage: 100, currentPage: page })
+                .then(paginatedData => {
+
+                    let movieData = paginatedData.data.map(row => {
+
+                        let imdbRating = row.imdbRating;
+                        let rottenTomatoesRating = row.rottentomatoesRating;
+                        let metaCriticRating = row.metacriticRating;
+
+                        if (imdbRating !== null) {
+                            imdbRating = Number(imdbRating);
+                        }
+
+                        if (rottenTomatoesRating !== null) {
+                            rottenTomatoesRating = Number(rottenTomatoesRating);
+                        }
+
+                        if (metaCriticRating !== null) {
+                            metaCriticRating = Number(metaCriticRating);
+                        }
+
+                        return {
+                            title: row.primaryTitle,
+                            year: row.year,
+                            imdbID: row.tconst,
+                            imdbRating: imdbRating,
+                            rottenTomatoesRating: rottenTomatoesRating,
+                            metacriticRating: metaCriticRating,
+                            classification: row.rated
+                        }
+                    })
+
+                    res.json({
+                        data: movieData, pagination: paginatedData.pagination
+                    });
                 })
                 .catch((err) => {
                     console.log(err);
@@ -38,15 +68,45 @@ router.get('/search', function (req, res, next) {
         }
 
         if (title === undefined && year !== undefined) {
-            console.log("title undefined and year not undefined")
             return req.db
                 .from("basics")
-                .select("*")
+                .select("tconst")
                 .whereRaw("`year` = " + year)
-                .limit(100)
-                .offset(page)
-                .then(rows => {
-                    res.json({ Error: false, Message: "Success", Data: rows });
+                .paginate({ perPage: 100, currentPage: page })
+                .then(paginatedData => {
+
+                    let movieData = paginatedData.data.map(row => {
+
+                        let imdbRating = row.imdbRating;
+                        let rottenTomatoesRating = row.rottentomatoesRating;
+                        let metaCriticRating = row.metacriticRating;
+
+                        if (imdbRating !== null) {
+                            imdbRating = Number(imdbRating);
+                        }
+
+                        if (rottenTomatoesRating !== null) {
+                            rottenTomatoesRating = Number(rottenTomatoesRating);
+                        }
+
+                        if (metaCriticRating !== null) {
+                            metaCriticRating = Number(metaCriticRating);
+                        }
+
+                        return {
+                            title: row.primaryTitle,
+                            year: row.year,
+                            imdbID: row.tconst,
+                            imdbRating: imdbRating,
+                            rottenTomatoesRating: rottenTomatoesRating,
+                            metacriticRating: metaCriticRating,
+                            classification: row.rated
+                        }
+                    })
+
+                    res.json({
+                        data: movieData, pagination: paginatedData.pagination
+                    });
                 })
                 .catch((err) => {
                     console.log(err);
@@ -55,15 +115,45 @@ router.get('/search', function (req, res, next) {
         }
 
         if (title !== undefined && year !== undefined) {
-            console.log("title not undefined and year not undefined")
             return req.db
                 .from("basics")
                 .select("*")
                 .whereRaw("`originalTitle` like '%" + title + "%' AND `year` = " + year)
-                .limit(100)
-                .offset(page)
-                .then(rows => {
-                    res.json({ Error: false, Message: "Success", Data: rows });
+                .paginate({ perPage: 100, currentPage: page })
+                .then(paginatedData => {
+
+                    let movieData = paginatedData.data.map(row => {
+
+                        let imdbRating = row.imdbRating;
+                        let rottenTomatoesRating = row.rottentomatoesRating;
+                        let metaCriticRating = row.metacriticRating;
+
+                        if (imdbRating !== null) {
+                            imdbRating = Number(imdbRating);
+                        }
+
+                        if (rottenTomatoesRating !== null) {
+                            rottenTomatoesRating = Number(rottenTomatoesRating);
+                        }
+
+                        if (metaCriticRating !== null) {
+                            metaCriticRating = Number(metaCriticRating);
+                        }
+
+                        return {
+                            title: row.primaryTitle,
+                            year: row.year,
+                            imdbID: row.tconst,
+                            imdbRating: imdbRating,
+                            rottenTomatoesRating: rottenTomatoesRating,
+                            metacriticRating: metaCriticRating,
+                            classification: row.rated
+                        }
+                    })
+
+                    res.json({
+                        data: movieData, pagination: paginatedData.pagination
+                    });
                 })
                 .catch((err) => {
                     console.log(err);
@@ -75,10 +165,41 @@ router.get('/search', function (req, res, next) {
     return req.db
         .from("basics")
         .select("*")
-        .limit(100)
-        .offset(page)
-        .then(rows => {
-            res.json({ Error: false, Message: "Success", Data: rows });
+        .paginate({ perPage: 100, currentPage: page })
+        .then(paginatedData => {
+
+            let movieData = paginatedData.data.map(row => {
+
+                let imdbRating = row.imdbRating;
+                let rottenTomatoesRating = row.rottentomatoesRating;
+                let metaCriticRating = row.metacriticRating;
+
+                if (imdbRating !== null) {
+                    imdbRating = Number(imdbRating);
+                }
+
+                if (rottenTomatoesRating !== null) {
+                    rottenTomatoesRating = Number(rottenTomatoesRating);
+                }
+
+                if (metaCriticRating !== null) {
+                    metaCriticRating = Number(metaCriticRating);
+                }
+
+                return {
+                    title: row.primaryTitle,
+                    year: row.year,
+                    imdbID: row.tconst,
+                    imdbRating: imdbRating,
+                    rottenTomatoesRating: rottenTomatoesRating,
+                    metacriticRating: metaCriticRating,
+                    classification: row.rated
+                }
+            })
+
+            res.json({
+                data: movieData, pagination: paginatedData.pagination
+            });
         })
         .catch((err) => {
             console.log(err);
