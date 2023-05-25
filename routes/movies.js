@@ -6,6 +6,11 @@ router.get('/search', function (req, res, next) {
 
     const title = req.query.title;
     const year = req.query.year;
+
+    if (year < 1000 || year > 9999) {
+        res.json({ error: true, message: "Invalid year format. Format must be yyyy." });
+    }
+
     let page = req.query.page;
 
     if (page < 1) {
@@ -202,8 +207,7 @@ router.get('/search', function (req, res, next) {
             });
         })
         .catch((err) => {
-            console.log(err);
-            res.json({ Error: true, Message: "Error in MySQL query" });
+            res.json({ error: true, message: err.Message });
         });
 
 });
@@ -211,11 +215,23 @@ router.get('/search', function (req, res, next) {
 router.get('/data/:imdbID', function (req, res, next) {
     const imdbID = req.params.imdbID;
 
+    if (imdbID === "" || imdbID === undefined) {
+        return res.json({ error: true, message: "Invalid query parameters: year. Query parameters are not permitted." });
+    }
+
+    if (req.query.year !== undefined) {
+        return res.json({ error: true, message: "You must supply an imdbID!" });
+    }
+
     return req.db
         .from("basics")
         .select("*")
         .where("tconst", imdbID)
         .then(result => {
+            if (result[0] === undefined) {
+                throw new Error("No record exists of a movie with this ID");
+            }
+
             result = result[0];
             let genres = result.genres;
 
@@ -306,8 +322,7 @@ router.get('/data/:imdbID', function (req, res, next) {
                 })
         })
         .catch((err) => {
-            console.log(err);
-            res.json({ Error: true, Message: "Error in MySQL query" });
+            return res.json({ error: true, message: err.message });
         });
 });
 
