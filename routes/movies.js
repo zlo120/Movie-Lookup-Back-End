@@ -8,13 +8,13 @@ router.get('/search', function (req, res, next) {
     const year = req.query.year;
 
     if (year < 1000 || year > 9999) {
-        res.json({ error: true, message: "Invalid year format. Format must be yyyy." });
+        res.status(400).json({ error: true, message: "Invalid year format. Format must be yyyy." });
     }
 
     let page = req.query.page;
 
     if (page < 1) {
-        return res.json({ Error: true, Message: "Query parameter year is wrong" });
+        page = 1;
     }
 
     if (page === undefined) {
@@ -212,15 +212,19 @@ router.get('/search', function (req, res, next) {
 
 });
 
+router.get('/data', function (req, res, next) {
+    return res.status(400).json({ error: true, message: "You must supply an imdbID!" });
+});
+
 router.get('/data/:imdbID', function (req, res, next) {
     const imdbID = req.params.imdbID;
 
     if (imdbID === "" || imdbID === undefined) {
-        return res.json({ error: true, message: "Invalid query parameters: year. Query parameters are not permitted." });
+        return res.status(400).json({ error: true, message: "You must supply an imdbID!" });
     }
 
     if (req.query.year !== undefined) {
-        return res.json({ error: true, message: "You must supply an imdbID!" });
+        return res.status(400).json({ error: true, message: "Invalid query parameters: year. Query parameters are not permitted." });
     }
 
     return req.db
@@ -336,7 +340,7 @@ router.get('/data/:imdbID', function (req, res, next) {
                 })
         })
         .catch((err) => {
-            return res.json({ error: true, message: err.message });
+            return res.status(404).json({ error: true, message: err.message });
         });
 });
 
