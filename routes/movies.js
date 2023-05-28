@@ -262,21 +262,35 @@ router.get('/data/:imdbID', function (req, res, next) {
                 .then(results => {
 
                     let principals = results.map(principal => {
-
                         let characters = principal.characters;
+                        let characters_list = [];
 
                         if (characters !== undefined && characters === "") {
-                            characters = [];
+                            characters_list = [];
                         }
                         else if (characters !== undefined) {
-                            characters = JSON.parse(characters);
+
+                            try {
+
+                                characters_list = JSON.parse(characters);
+
+                            }
+                            catch (e) {
+                                characters = characters.split(",")
+                                characters.forEach(character => {
+                                    character = character.replace('["', '');
+                                    character = character.replace('"]', '');
+                                    character = character.replaceAll('"', '\"');
+                                    characters_list.push(character);
+                                })
+                            }
                         }
 
                         return {
                             id: principal.nconst,
                             category: principal.category,
                             name: principal.name,
-                            characters: characters
+                            characters: characters_list
                         }
                     })
 
