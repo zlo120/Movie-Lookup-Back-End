@@ -411,6 +411,26 @@ router.put('/:email/profile', function (req, res) {
           const dob = req.body.dob;
           const address = req.body.address;
 
+          if (firstName === undefined || lastName === undefined || dob === undefined || address === undefined) {
+            return res.status(400).json({
+              error: true,
+              message: "Request body incomplete: firstName, lastName, dob and address are required"
+            });
+          }
+
+          let regex_pattern = /^\d{4}-\d{2}-\d{2}$/;
+
+          if (!regex_pattern.test(dob)) {
+            return res.status(400).json({ error: true, message: "Invalid input: dob must be a real date in format YYYY-MM-DD" });
+          }
+
+          if (typeof (firstName) !== 'string' || typeof (lastName) !== 'string' || typeof (dob) !== 'string' || typeof (address) !== 'string') {
+            return res.status(400).json({
+              error: true,
+              message: "Request body invalid: firstName, lastName, dob and address must be strings only"
+            });
+          }
+
           if (decoded.email !== email) {
             return (res.status(403).json({
               error: true,
@@ -419,23 +439,12 @@ router.put('/:email/profile', function (req, res) {
             ));
           }
 
-          let updateUserData = {};
-
-          if (firstName !== undefined) {
-            updateUserData.firstName = firstName;
-          }
-
-          if (lastName !== undefined) {
-            updateUserData.lastName = lastName;
-          }
-
-          if (dob !== undefined) {
-            updateUserData.dob = dob;
-          }
-
-          if (address !== undefined) {
-            updateUserData.address = address;
-          }
+          let updateUserData = {
+            firstName: firstName,
+            lastName: lastName,
+            dob: dob,
+            address: address
+          };
 
           return req.db
             .from('users')
