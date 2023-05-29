@@ -269,4 +269,66 @@ router.post('/refresh', function (req, res) {
     })
 });
 
+
+// profile stuff
+router.get('/:email/profile', function (req, res) {
+  const email = req.params.email;
+
+  // Authenticate user
+  // check if user is authorized
+  if (!("authorization" in req.headers)
+    || !req.headers.authorization.match(/^Bearer /)
+  ) {
+    return res.status(401).json({ error: true, message: "Authorization header ('Bearer token') not found" });
+  }
+
+  if (req.headers.authorization === undefined) {
+    return res.status(401).json({ error: true, message: "Authorization header is malformed" });
+  }
+
+  const token = req.headers.authorization.replace(/^Bearer /, "");
+
+  return jwt.verify(token, JWT_SECRET, function (err, decoded) {
+    if (err) {
+      req.db
+        .from('tokens')
+        .where('bearerToken', token)
+        .then(response => {
+
+          if (response[0] === undefined) {
+            return res.status(401).json({ error: true, message: "Invalid JWT token" });
+          }
+
+          return res.status(401).json({ error: true, message: "JWT token has expired" });
+
+        });
+    }
+    else {
+      // search for email
+      req.db
+        .from('users')
+        .select('*')
+        .where('email', email)
+        .then(result => {
+          // user not found
+          if (result[0] === undefined) {
+            return res.status(404).json({
+              error: true,
+              message: "User not found"
+            });
+          }
+
+          const user = result[0];
+
+          return res.json(user);
+        })
+    }
+  })
+});
+
+router.put('/:email/profile', function (req, res) {
+  const email = req.params.email;
+});
+
+
 module.exports = router;

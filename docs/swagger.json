@@ -1146,6 +1146,14 @@
                   "longExpiry": {
                     "type": "boolean",
                     "example": "false"
+                  },
+                  "bearerExpiresInSeconds": {
+                    "type": "int",
+                    "example": 86400
+                  },
+                  "refreshExpiresInSeconds": {
+                    "type": "int",
+                    "example": 600
                   }
                 }
               }

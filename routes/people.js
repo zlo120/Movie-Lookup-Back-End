@@ -8,15 +8,6 @@ router.get('/:id', function (req, res, next) {
 
     const id = req.params.id;
 
-    // Error 400
-    // if (!id) {
-    //     return res.status(400).json({
-    //         error: true,
-    //         message: "Invalid query parameters: year. Query parameters are not permitted."
-    //     });
-    // }
-
-
     // check if user is authorized
     if (!("authorization" in req.headers)
         || !req.headers.authorization.match(/^Bearer /)
