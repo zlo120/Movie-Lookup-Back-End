@@ -279,7 +279,27 @@ router.get('/:email/profile', function (req, res) {
   if (!("authorization" in req.headers)
     || !req.headers.authorization.match(/^Bearer /)
   ) {
-    return res.status(401).json({ error: true, message: "Authorization header ('Bearer token') not found" });
+    return req.db
+      .from('users')
+      .select('*')
+      .where('email', email)
+      .then(result => {
+        // user not found
+        if (result[0] === undefined) {
+          return res.status(404).json({
+            error: true,
+            message: "User not found"
+          });
+        }
+
+        const user = result[0];
+
+        return res.json({
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName
+        });
+      })
   }
 
   if (req.headers.authorization === undefined) {
@@ -305,7 +325,7 @@ router.get('/:email/profile', function (req, res) {
     }
     else {
       // search for email
-      req.db
+      return req.db
         .from('users')
         .select('*')
         .where('email', email)
@@ -320,7 +340,13 @@ router.get('/:email/profile', function (req, res) {
 
           const user = result[0];
 
-          return res.json(user);
+          return res.json({
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            dob: user.dob,
+            address: user.address
+          });
         })
     }
   })
@@ -328,7 +354,101 @@ router.get('/:email/profile', function (req, res) {
 
 router.put('/:email/profile', function (req, res) {
   const email = req.params.email;
-});
 
+  return req.db
+    .from('users')
+    .select('*')
+    .where('email', email)
+    .then(results => {
+
+      if (results[0] === undefined) {
+        return res.status(404).json({
+          error: true,
+          message: "User not found"
+        });
+      }
+
+      // Authenticate first
+      if (!("authorization" in req.headers)
+        || !req.headers.authorization.match(/^Bearer /)
+      ) {
+        return res.status(401).json({
+          error: true,
+          message: "Authorization header ('Bearer token') not found"
+        });
+      }
+
+      const token = req.headers.authorization.replace(/^Bearer /, "");
+
+      return jwt.verify(token, JWT_SECRET, function (err, decoded) {
+        if (err) {
+
+          return req.db
+            .from('tokens')
+            .where("bearerToken", token)
+            .then(result => {
+              if (result[0] === undefined) {
+
+                return res.status(401).json({
+                  error: true,
+                  message: "Invalid JWT token"
+                });
+
+              }
+              else {
+
+                return res.status(401).json({
+                  error: true,
+                  message: "JWT token has expired"
+                });
+
+              }
+            })
+        }
+        else {
+          const firstName = req.body.firstName;
+          const lastName = req.body.lastName;
+          const dob = req.body.dob;
+          const address = req.body.address;
+
+          if (decoded.email !== email) {
+            return (res.status(403).json({
+              error: true,
+              message: "Forbidden"
+            }
+            ));
+          }
+
+          let updateUserData = {};
+
+          if (firstName !== undefined) {
+            updateUserData.firstName = firstName;
+          }
+
+          if (lastName !== undefined) {
+            updateUserData.lastName = lastName;
+          }
+
+          if (dob !== undefined) {
+            updateUserData.dob = dob;
+          }
+
+          if (address !== undefined) {
+            updateUserData.address = address;
+          }
+
+          return req.db
+            .from('users')
+            .where("email", email)
+            .update(updateUserData)
+            .then(response => {
+              console.log(response);
+              return res.json(updateUserData);
+            });
+
+        }
+      });
+    })
+});
 
 module.exports = router;
