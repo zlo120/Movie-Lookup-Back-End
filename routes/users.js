@@ -201,7 +201,7 @@ router.post('/logout', function (req, res) {
             .where('refreshToken', token)
             .del()
             .then(response => {
-              return res.status(200).json({ error: false, message: "Token successfully invalited" });
+              return res.status(200).json({ error: false, message: "Token successfully invalidated" });
             });
         }
       })
@@ -238,13 +238,13 @@ router.post('/refresh', function (req, res) {
           // refresh the token here
           let bearerToken = jwt.sign({
             email: decoded.email,
-            exp: Math.floor(Date.now() / 1000) + 86400
+            exp: Math.floor(Date.now() / 1000) + 600
           },
             JWT_SECRET);
 
           let refreshToken = jwt.sign({
             email: decoded.email,
-            exp: Math.floor(Date.now() / 1000) + 600
+            exp: Math.floor(Date.now() / 1000) + 86400
           },
             JWT_SECRET)
 
@@ -253,21 +253,21 @@ router.post('/refresh', function (req, res) {
             .where('email', decoded.email)
             .update({
               bearerToken: bearerToken,
-              bearerExpiry: 86400,
+              bearerExpiry: 600,
               refreshToken: refreshToken,
-              refreshExpiry: 600
+              refreshExpiry: 86400
             })
             .then(result => {
               return res.status(200).json({
                 bearerToken: {
                   token: bearerToken,
                   token_type: "Bearer",
-                  expires_in: 86400
+                  expires_in: 600
                 },
                 refreshToken: {
                   token: refreshToken,
                   token_type: "Refresh",
-                  expires_in: 600
+                  expires_in: 86400
                 }
               });
             });
@@ -297,6 +297,14 @@ router.get('/:email/profile', profileAuthorization, function (req, res) {
         }
 
         const user = result[0];
+        const currentUsersDecodedToken = res.locals.decodedBearerToken;
+        if (currentUsersDecodedToken.email !== email) {
+          return res.json({
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName
+          });
+        }
 
         return res.json({
           email: user.email,
@@ -356,24 +364,38 @@ router.put('/:email/profile', profileAuthorization, function (req, res) {
       if (firstName === undefined || lastName === undefined || dob === undefined || address === undefined) {
         return res.status(400).json({
           error: true,
-          message: "Request body incomplete: firstName, lastName, dob and address are required"
+          message: "Request body incomplete: firstName, lastName, dob and address are required."
         });
       }
 
       let regex_pattern = /^\d{4}-\d{2}-\d{2}$/;
 
-      if (!regex_pattern.test(dob)) {
-        return res.status(400).json({ error: true, message: "Invalid input: dob must be a real date in format YYYY-MM-DD" });
+      let dobCheck = new Date(dob);
+
+      // checking if date is a valid date (for example 31st of April is not valid)
+      const [year, month, day] = dob.split("-"); ``
+
+      if (dobCheck.getFullYear() !== Number(year) || dobCheck.getMonth() !== Number(month) - 1 || dobCheck.getDate() !== Number(day)) {
+        return res.status(400).json({ error: true, message: "Invalid input: dob must be a real date in format YYYY-MM-DD." });
+      }
+
+      if (dobCheck > new Date()) {
+        return res.status(400).json({ error: true, message: "Invalid input: dob must be a date in the past." });
+      }
+
+      if (!regex_pattern.test(dob) || dobCheck == "Invalid Date") {
+        return res.status(400).json({ error: true, message: "Invalid input: dob must be a real date in format YYYY-MM-DD." });
       }
 
       if (typeof (firstName) !== 'string' || typeof (lastName) !== 'string' || typeof (dob) !== 'string' || typeof (address) !== 'string') {
         return res.status(400).json({
           error: true,
-          message: "Request body invalid: firstName, lastName, dob and address must be strings only"
+          message: "Request body invalid: firstName, lastName and address must be strings only."
         });
       }
 
       let updateUserData = {
+        email: email,
         firstName: firstName,
         lastName: lastName,
         dob: dob,
@@ -385,7 +407,6 @@ router.put('/:email/profile', profileAuthorization, function (req, res) {
         .where("email", email)
         .update(updateUserData)
         .then(response => {
-          console.log(response);
           return res.json(updateUserData);
         });
 

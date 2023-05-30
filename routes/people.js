@@ -5,6 +5,10 @@ const authorization = require("../middleware/authorization");
 /* GET person data */
 router.get('/:id', authorization, function (req, res, next) {
 
+    if (Object.keys(req.query).length !== 0) {
+        return res.status(400).json({ error: true, message: "Invalid query parameters: year. Query parameters are not permitted." });
+    }
+
     const id = req.params.id;
 
     const token = req.headers.authorization.replace(/^Bearer /, "");

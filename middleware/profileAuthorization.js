@@ -19,9 +19,27 @@ const authorize = (req, res, next) => {
     }
 
     if (req.method === 'GET') {
+        const token = req.headers.authorization.replace(/^Bearer /, "");
 
-        res.locals.isAuthenticated = true;
-        return next();
+        return jwt.verify(token, JWT_SECRET, function (err, decoded) {
+            // if the token is invalid
+            if (err) {
+
+                if (err.name === "TokenExpiredError") {
+                    return res.status(401).json({ error: true, message: "JWT token has expired" });
+                }
+
+                return res.status(401).json({ error: true, message: "Invalid JWT token" });
+
+            }
+
+            if (decoded) {
+                // if the token is valid and the user that is trying to be updated is attempted by the same user that is logged in
+                res.locals.isAuthenticated = true;
+                res.locals.decodedBearerToken = decoded;
+                return next();
+            }
+        });
     }
 
     if (req.method === 'PUT') {

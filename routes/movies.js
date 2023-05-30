@@ -74,7 +74,6 @@ router.get('/search', function (req, res, next) {
                     });
                 })
                 .catch((err) => {
-                    console.log(err);
                     res.json({ Error: true, Message: "Error in MySQL query" });
                 });
         }
@@ -121,7 +120,6 @@ router.get('/search', function (req, res, next) {
                     });
                 })
                 .catch((err) => {
-                    console.log(err);
                     res.json({ Error: true, Message: "Error in MySQL query" });
                 });
         }
@@ -168,7 +166,6 @@ router.get('/search', function (req, res, next) {
                     });
                 })
                 .catch((err) => {
-                    console.log(err);
                     res.json({ Error: true, Message: "Error in MySQL query" });
                 });
         }
