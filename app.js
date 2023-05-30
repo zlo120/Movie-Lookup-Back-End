@@ -14,7 +14,6 @@ const cors = require('cors');
 const { attachPaginate } = require('knex-paginate');
 attachPaginate();
 
-var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var peopleRouter = require("./routes/people");
 var movieRouter = require("./routes/movies");
@@ -41,7 +40,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/", indexRouter);
 app.use("/user", usersRouter);
 app.use("/people", peopleRouter);
 app.use("/movies", movieRouter);

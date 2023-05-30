@@ -1,5 +1,6 @@
 var express = require('express');
 const bcrypt = require('bcrypt');
+const profileAuthorization = require("../middleware/profileAuthorization");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = "SJHSfsious8df7ShdsdhjasjkldSSAFuehtjknsdfm";
 
@@ -269,16 +270,36 @@ router.post('/refresh', function (req, res) {
     })
 });
 
-
 // profile stuff
-router.get('/:email/profile', function (req, res) {
+router.get('/:email/profile', profileAuthorization, function (req, res) {
   const email = req.params.email;
 
-  // Authenticate user
-  // check if user is authorized
-  if (!("authorization" in req.headers)
-    || !req.headers.authorization.match(/^Bearer /)
-  ) {
+  if (res.locals.isAuthenticated) {
+    return req.db
+      .from('users')
+      .select('*')
+      .where('email', email)
+      .then(result => {
+        // user not found
+        if (result[0] === undefined) {
+          return res.status(404).json({
+            error: true,
+            message: "User not found"
+          });
+        }
+
+        const user = result[0];
+
+        return res.json({
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          dob: user.dob,
+          address: user.address
+        });
+      })
+  } else {
+    // if user is not authenticated then return limited information
     return req.db
       .from('users')
       .select('*')
@@ -301,58 +322,9 @@ router.get('/:email/profile', function (req, res) {
         });
       })
   }
-
-  if (req.headers.authorization === undefined) {
-    return res.status(401).json({ error: true, message: "Authorization header is malformed" });
-  }
-
-  const token = req.headers.authorization.replace(/^Bearer /, "");
-
-  return jwt.verify(token, JWT_SECRET, function (err, decoded) {
-    if (err) {
-      req.db
-        .from('tokens')
-        .where('bearerToken', token)
-        .then(response => {
-
-          if (response[0] === undefined) {
-            return res.status(401).json({ error: true, message: "Invalid JWT token" });
-          }
-
-          return res.status(401).json({ error: true, message: "JWT token has expired" });
-
-        });
-    }
-    else {
-      // search for email
-      return req.db
-        .from('users')
-        .select('*')
-        .where('email', email)
-        .then(result => {
-          // user not found
-          if (result[0] === undefined) {
-            return res.status(404).json({
-              error: true,
-              message: "User not found"
-            });
-          }
-
-          const user = result[0];
-
-          return res.json({
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            dob: user.dob,
-            address: user.address
-          });
-        })
-    }
-  })
 });
 
-router.put('/:email/profile', function (req, res) {
+router.put('/:email/profile', profileAuthorization, function (req, res) {
   const email = req.params.email;
 
   return req.db
@@ -368,95 +340,48 @@ router.put('/:email/profile', function (req, res) {
         });
       }
 
-      // Authenticate first
-      if (!("authorization" in req.headers)
-        || !req.headers.authorization.match(/^Bearer /)
-      ) {
-        return res.status(401).json({
+      const firstName = req.body.firstName;
+      const lastName = req.body.lastName;
+      const dob = req.body.dob;
+      const address = req.body.address;
+
+      if (firstName === undefined || lastName === undefined || dob === undefined || address === undefined) {
+        return res.status(400).json({
           error: true,
-          message: "Authorization header ('Bearer token') not found"
+          message: "Request body incomplete: firstName, lastName, dob and address are required"
         });
       }
 
-      const token = req.headers.authorization.replace(/^Bearer /, "");
+      let regex_pattern = /^\d{4}-\d{2}-\d{2}$/;
 
-      return jwt.verify(token, JWT_SECRET, function (err, decoded) {
-        if (err) {
+      if (!regex_pattern.test(dob)) {
+        return res.status(400).json({ error: true, message: "Invalid input: dob must be a real date in format YYYY-MM-DD" });
+      }
 
-          return req.db
-            .from('tokens')
-            .where("bearerToken", token)
-            .then(result => {
-              if (result[0] === undefined) {
+      if (typeof (firstName) !== 'string' || typeof (lastName) !== 'string' || typeof (dob) !== 'string' || typeof (address) !== 'string') {
+        return res.status(400).json({
+          error: true,
+          message: "Request body invalid: firstName, lastName, dob and address must be strings only"
+        });
+      }
 
-                return res.status(401).json({
-                  error: true,
-                  message: "Invalid JWT token"
-                });
+      let updateUserData = {
+        firstName: firstName,
+        lastName: lastName,
+        dob: dob,
+        address: address
+      };
 
-              }
-              else {
+      return req.db
+        .from('users')
+        .where("email", email)
+        .update(updateUserData)
+        .then(response => {
+          console.log(response);
+          return res.json(updateUserData);
+        });
 
-                return res.status(401).json({
-                  error: true,
-                  message: "JWT token has expired"
-                });
 
-              }
-            })
-        }
-        else {
-          const firstName = req.body.firstName;
-          const lastName = req.body.lastName;
-          const dob = req.body.dob;
-          const address = req.body.address;
-
-          if (firstName === undefined || lastName === undefined || dob === undefined || address === undefined) {
-            return res.status(400).json({
-              error: true,
-              message: "Request body incomplete: firstName, lastName, dob and address are required"
-            });
-          }
-
-          let regex_pattern = /^\d{4}-\d{2}-\d{2}$/;
-
-          if (!regex_pattern.test(dob)) {
-            return res.status(400).json({ error: true, message: "Invalid input: dob must be a real date in format YYYY-MM-DD" });
-          }
-
-          if (typeof (firstName) !== 'string' || typeof (lastName) !== 'string' || typeof (dob) !== 'string' || typeof (address) !== 'string') {
-            return res.status(400).json({
-              error: true,
-              message: "Request body invalid: firstName, lastName, dob and address must be strings only"
-            });
-          }
-
-          if (decoded.email !== email) {
-            return (res.status(403).json({
-              error: true,
-              message: "Forbidden"
-            }
-            ));
-          }
-
-          let updateUserData = {
-            firstName: firstName,
-            lastName: lastName,
-            dob: dob,
-            address: address
-          };
-
-          return req.db
-            .from('users')
-            .where("email", email)
-            .update(updateUserData)
-            .then(response => {
-              console.log(response);
-              return res.json(updateUserData);
-            });
-
-        }
-      });
     })
 });
 
