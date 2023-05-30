@@ -27,6 +27,19 @@
           }
         }
       },
+      "InvalidPageFormat": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "boolean",
+            "example": "true"
+          },
+          "message": {
+            "type": "string",
+            "example": "Invalid page format. page must be a number."
+          }
+        }
+      },
       "MissingAuthHeader": {
         "type": "object",
         "properties": {
@@ -187,7 +200,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvalidYearFormat"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/InvalidYearFormat"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InvalidPageFormat"
+                    }
+                  ]
                 }
               }
             }
@@ -788,7 +808,7 @@
         "description": "Update the information about a user",
         "tags": [
           "Profile"
-        ],        
+        ],
         "requestBody": {
           "description": "The data the user wants to update with.",
           "required": true,
@@ -974,7 +994,7 @@
                           "example": "Authorization header is malformed"
                         }
                       }
-                    } 
+                    }
                   ]
                 }
               }

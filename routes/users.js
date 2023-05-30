@@ -55,13 +55,21 @@ router.post('/login', function (req, res) {
   let bearerExpires = req.body.bearerExpiresInSeconds;
   let refreshExpires = req.body.refreshExpiresInSeconds;
 
-  // checking to see if the expiry time has been given
-  if (!bearerExpires) {
-    bearerExpires = 86400;
-  }
+  const longExpiry = req.body.longExpiry;
 
-  if (!refreshExpires) {
-    refreshExpires = 600;
+  if (longExpiry && !bearerExpires && !refreshExpires) {
+    bearerExpires = 31536000;
+    refreshExpires = 31536000;
+  } else {
+
+    // checking to see if the expiry time has been given
+    if (!bearerExpires) {
+      bearerExpires = 600;
+    }
+
+    if (!refreshExpires) {
+      refreshExpires = 86400;
+    }
   }
 
   return req.db

@@ -7,14 +7,17 @@ router.get('/search', function (req, res, next) {
     const title = req.query.title;
     const year = req.query.year;
 
-    if (year < 1000 || year > 9999) {
-        res.status(400).json({ error: true, message: "Invalid year format. Format must be yyyy." });
+    if ((year !== undefined && isNaN(year)) || year < 1000 || year > 9999) {
+        return res.status(400).json({ error: true, message: "Invalid year format. Format must be yyyy." });
     }
 
     let page = req.query.page;
 
-    if (page < 1) {
-        page = 1;
+    if (isNaN(page) && page !== undefined) {
+        return res.status(400).json({
+            error: true,
+            message: "Invalid page format. page must be a number."
+        });
     }
 
     if (page === undefined) {
@@ -23,13 +26,17 @@ router.get('/search', function (req, res, next) {
         page = Number(page);
     }
 
+    if (page < 1) {
+        page = 1;
+    }
+
     if (title !== undefined || year !== undefined) {
 
         if (title !== undefined && year === undefined) {
             return req.db
                 .from("basics")
                 .select("*")
-                .whereRaw("`originalTitle` like '%" + title + "%'")
+                .whereRaw("`primaryTitle` like '%" + title + "%'")
                 .paginate({ perPage: 100, currentPage: page, isLengthAware: true })
                 .then(paginatedData => {
 
@@ -123,7 +130,7 @@ router.get('/search', function (req, res, next) {
             return req.db
                 .from("basics")
                 .select("*")
-                .whereRaw("`originalTitle` like '%" + title + "%' AND `year` = " + year)
+                .whereRaw("`primaryTitle` like '%" + title + "%' AND `year` = " + year)
                 .paginate({ perPage: 100, currentPage: page, isLengthAware: true })
                 .then(paginatedData => {
 
@@ -223,7 +230,7 @@ router.get('/data/:imdbID', function (req, res, next) {
         return res.status(400).json({ error: true, message: "You must supply an imdbID!" });
     }
 
-    if (req.query.year !== undefined) {
+    if (Object.keys(req.query).length !== 0) {
         return res.status(400).json({ error: true, message: "Invalid query parameters: year. Query parameters are not permitted." });
     }
 
